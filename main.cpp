@@ -35,8 +35,6 @@ struct Node
 
     int line;
 
-    Node() = default;
-
     Node(int _line, BoardPosition &_data) {
         line = _line;
         data = _data;
@@ -49,6 +47,7 @@ private:
     const signed char LOSE = -10;
     const signed char WIN = 10;
 public:
+    int numNodes = 0;
     std::vector<Node*> nodes;
 public:
     AI() {
@@ -80,7 +79,7 @@ public:
         else if (board.board[0][0] == turn && board.board[1][1] == turn && board.board[2][2] == turn) won = true;
         else if (board.board[0][2] == turn && board.board[1][1] == turn && board.board[2][0] == turn) won = true;
 
-        if (won) std::cout << "Won Position" << std::endl;
+        //if (won) std::cout << "Won Position" << std::endl;
         return won;
     }
 
@@ -93,8 +92,9 @@ public:
     }
 
     void Generate() {
-        for (int x = 0; x < 1; x++) {
-            for (int y = 0; y < 1; y++) {
+        int x = 0, y = 0;
+        //for (int x = 0; x < 1; x++) {
+        //    for (int y = 0; y < 1; y++) {
                 BoardPosition newPos;
                 ResetBoard(newPos);
                 newPos.board[x][y] = 'X';
@@ -103,16 +103,17 @@ public:
                 Evaluate(newPos, line);
                 Node* node = new Node(line, newPos);
                 nodes.push_back(node);
-                for (Node* &node : nodes) GenerateNodes(node);
-            }
-        }
+                numNodes ++;
+                for (Node* node : nodes) GenerateNodes(node);
+        //    }
+        //}
     }
 
      void GenerateNodes(Node* currentNode) {
         char turn;
         if ((currentNode->line+1) % 2 == 1) turn = 'X';
         else turn ='O';
-
+        
         for (int x = 0; x < 3; x++) {
             for (int y = 0; y < 3; y++) {
                 Node* newNode = new Node(currentNode->line+1, currentNode->data);
@@ -122,37 +123,37 @@ public:
                     newNode->data.board[x][y] = turn;
                     Evaluate(newNode->data, currentNode->line+1);
                     currentNode->children.push_back(newNode);
+                    
                 } else delete(newNode);
             }
         }
+        numNodes += currentNode->children.size();
+        //std::cout << "Size of line " << currentNode->line << " node " << &currentNode   << " children Vector: " 
+        //<< currentNode->children.size() << std::endl;
 
-        if (currentNode->line < 9) 
-            for (Node* &node : currentNode->children) {
+        
+        if (currentNode->children[0]->line < 9) {
+            for (Node* node : currentNode->children) {
                 if (node->data.value != LOSE && node->data.value != WIN) GenerateNodes(node);
             }
+        } else {
+            numNodes += currentNode->children[0]->children.size();
+            //td::cout << "Size of line " << currentNode->children[0]->line << " node " << &currentNode->children[0]   << " children Vector: " 
+            //<< currentNode->children[0]->children.size() << std::endl;
+        }
     }
 
-    void DisplayTree(Node* currentNode)
-    {
+    void DisplayTree(Node* currentNode) {
         if (currentNode->line == 9)
         {
-            std::cout << "\nLine: " << currentNode->line << std::endl;
-            std::cout << "-----------\n";
-            for (int x = 0; x < 3; x++) {
-                for (int y = 0; y < 3; y++) {
-                    std::cout << " " << currentNode->data.board[x][y] << " ";
-                    if (y != 2) std::cout << "|";
-                }
-                std::cout << "\n-----------\n";
-            }
+           DisplayBoard(*currentNode);  
         }
-        for (Node* &node : currentNode->children) DisplayTree(node);
+        for (Node* node : currentNode->children) DisplayTree(node);
     }
 
-    static inline void DisplayBoard(Node &board)
-    {
+    static inline void DisplayBoard(Node &board) {
         std::cout << "\nLine: " << board.line << std::endl;
-        std::cout << "-----------\n";
+        std::cout << "-----------\n";   
         for (int x = 0; x < 3; x++) {
             
             for (int y = 0; y < 3; y++) {
@@ -168,7 +169,7 @@ int main()
 {
     AI ai;
     ai.Generate();
-    ai.DisplayTree(ai.nodes[0]);
-
+    //ai.DisplayTree(ai.nodes[0]);
+    std::cout << "Number Nodes: " << ai.numNodes << std::endl;
     return 0;
 }
