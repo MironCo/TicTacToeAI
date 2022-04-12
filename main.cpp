@@ -12,9 +12,18 @@ class Board
 {
 public:
     BoardPosition board;
+    bool turn;
+    bool gameWon = false;
 public:
-    Board() {
-        
+    Board() = default;
+    void Play() {
+        Reset();
+        turn = 0;
+
+        do {
+            Display();
+            GetInput();
+        } while (!gameWon); 
     }
     void Display() {    
         std::cout << "\n-----------\n";
@@ -26,6 +35,40 @@ public:
             }
             std::cout << "\n-----------\n";
         }
+    }
+    void Reset() {
+        for (int x = 0; x < 3; x++) {
+            for (int y = 0; y < 3; y++) {
+                board.board[x][y] = (char)((x*3) + y + '1');
+            }
+        }
+    }
+    bool ValidateMove(int input) {
+        char checkedPos = board.board[(input-1)/3][(input-1)%3];
+
+        if (input < 1 || input > 9) return false;
+        if (checkedPos == 'X' || checkedPos == 'O') return false;
+        return true;
+    }
+    void SetBox(int index, char turn) {
+        board.board[(index-1)/3][(index-1)%3] = turn;
+    }
+    void GetInput() {
+        if (turn == 0) {
+            int input;
+            
+            do {
+                std::cout << "Player One - Chooses a box from 1 - 9: ";
+                std::cin >> input;
+            } while(!ValidateMove(input));
+
+            SetBox(input, 'X');
+        }
+        
+        turn != turn;
+    }
+    void PlayAgain() {
+    
     }
 };
 
@@ -47,6 +90,7 @@ class AI
 private:
     static const signed char LOSE = -10;
     static const signed char WIN = 10;
+    static const signed char TIE = 0;
 public:
     int numNodes = 0;
     std::vector<Node*> nodes;
@@ -54,15 +98,13 @@ public:
     AI() {
         
     }
-
-    void ResetBoard(BoardPosition &board){
+    void ResetBoard(BoardPosition &board) {
         for (int x = 0; x < 3; x++) {
             for (int y = 0; y < 3; y++) {
                 board.board[x][y] = (char)((x*3) + y + '1');
             }
         }
     } 
-    
     bool CheckForWin(BoardPosition &board, char turn) {
         bool won = false;
         
@@ -88,10 +130,12 @@ public:
         if (line % 2 == 1) turn = 'X';
         else turn ='O';
 
-       if (CheckForWin(board, turn)){
-           if (turn == 'O') board.value = WIN;
-           else if (turn == 'X') board.value = LOSE;
-       }
+        if (CheckForWin(board, turn)){
+            if (turn == 'O') board.value = WIN;
+            else if (turn == 'X') board.value = LOSE;
+        } else {
+            if (line >= 9) board.value = TIE;
+        }
     }
 
     void Generate() {
@@ -139,7 +183,7 @@ public:
     }
 
     void DisplayTree(Node* currentNode) {
-        DisplayBoard(currentNode);  
+        if (currentNode->line == 5 && (currentNode->data.value == WIN || currentNode->data.value == LOSE)) DisplayBoard(currentNode);  
         for (Node* node : currentNode->children) DisplayTree(node);
     }
 
@@ -161,14 +205,14 @@ public:
 
 int main()
 {
+    bool gameWon = false;
+
     Board board;
 
     AI ai;
     ai.Generate();
-    ai.DisplayTree(ai.nodes[0]);
-    //std::cout << "Number Nodes: " << ai.numNodes << std::endl;
 
-    while(true);
+    board.Play();
     
     return 0;
 }
