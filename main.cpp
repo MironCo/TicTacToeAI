@@ -1,5 +1,6 @@
 #include <iostream> 
 #include <vector>
+#include <cstdint>
 
 struct BoardPosition
 {
@@ -33,9 +34,9 @@ struct Node
     BoardPosition data;
     std::vector<Node*> children;
 
-    unsigned char line;
+    uint8_t line;
 
-    Node(unsigned char _line, BoardPosition &_data) {
+    Node(short _line, BoardPosition &_data) {
         line = _line;
         data = _data;
     }
@@ -44,8 +45,8 @@ struct Node
 class AI
 {
 private:
-    const signed char LOSE = -10;
-    const signed char WIN = 10;
+    static const signed char LOSE = -10;
+    static const signed char WIN = 10;
 public:
     int numNodes = 0;
     std::vector<Node*> nodes;
@@ -71,15 +72,14 @@ public:
         else if (board.board[0][2] == turn && board.board[1][2] == turn && board.board[2][2] == turn) won = true;
         
         //check vertical
-        else if (board.board[0][0] == turn && board.board[1][0] == turn && board.board[2][0] == turn) won = true;
-        else if (board.board[0][1] == turn && board.board[1][1] == turn && board.board[2][1] == turn) won = true;
-        else if (board.board[0][2] == turn && board.board[1][2] == turn && board.board[2][2] == turn) won = true;
+        else if (board.board[0][0] == turn && board.board[0][1] == turn && board.board[0][2] == turn) won = true;
+        else if (board.board[1][0] == turn && board.board[1][1] == turn && board.board[1][2] == turn) won = true;
+        else if (board.board[2][0] == turn && board.board[2][1] == turn && board.board[2][2] == turn) won = true;
 
         //diagonally
         else if (board.board[0][0] == turn && board.board[1][1] == turn && board.board[2][2] == turn) won = true;
         else if (board.board[0][2] == turn && board.board[1][1] == turn && board.board[2][0] == turn) won = true;
 
-        //if (won) std::cout << "Won Position" << std::endl;
         return won;
     }
 
@@ -130,7 +130,6 @@ public:
             }
         }
         
-        
         if (currentNode->line+1 < 9) {
             for (Node* node : currentNode->children) {
                 if (node->data.value == LOSE || node->data.value == WIN) return;
@@ -140,19 +139,19 @@ public:
     }
 
     void DisplayTree(Node* currentNode) {
-        if (currentNode->data.value == WIN || currentNode->data.value == LOSE){
-           DisplayBoard(*currentNode);  
-        }
+        DisplayBoard(currentNode);  
         for (Node* node : currentNode->children) DisplayTree(node);
     }
 
-    static inline void DisplayBoard(Node &board) {
-        std::cout << "\nLine: " << board.line << std::endl;
+    static inline void DisplayBoard(Node* board) {
+        std::cout << "\nLine: " << (short)board->line << std::endl;
+        if(board->data.value == AI::WIN) std::cout << "Won Position" << std::endl;
+        else if(board->data.value == AI::LOSE) std::cout << "LOSE Position" << std::endl;
         std::cout << "-----------\n";   
         for (int x = 0; x < 3; x++) {
             
             for (int y = 0; y < 3; y++) {
-                std::cout << " " << board.data.board[x][y] << " ";
+                std::cout << " " << board->data.board[x][y] << " ";
                 if (y != 2) std::cout << "|";
             }
             std::cout << "\n-----------\n";
@@ -166,8 +165,8 @@ int main()
 
     AI ai;
     ai.Generate();
-    //ai.DisplayTree(ai.nodes[0]);
-    std::cout << "Number Nodes: " << ai.numNodes << std::endl;
+    ai.DisplayTree(ai.nodes[0]);
+    //std::cout << "Number Nodes: " << ai.numNodes << std::endl;
 
     while(true);
     
