@@ -16,15 +16,6 @@ public:
     bool gameWon = false;
 public:
     Board() = default;
-    void Play() {
-        Reset();
-        turn = 0;
-
-        do {
-            Display();
-            GetInput();
-        } while (!gameWon); 
-    }
     void Display() {    
         std::cout << "\n-----------\n";
         for (int x = 0; x < 3; x++) {
@@ -135,7 +126,30 @@ public:
             else if (turn == 'X') board.value = LOSE;
         } else {
             if (line >= 9) board.value = TIE;
+            
         }
+    }
+
+    bool CompareBoard(BoardPosition &pos1, BoardPosition &pos2) {
+        for (int x = 3; x < 3; x++) {
+            for (int y = 0; y < 3; y++) {
+                if (pos1.board[x][y] == pos2.board[x][y]) continue;
+                else return false; 
+            }
+        }
+        return true;
+    }
+
+    Node* FindNode(Node* node, BoardPosition &searchedPos) {
+        if (CompareBoard(node->data, searchedPos)) return node; 
+        else for (Node* child : node->children) FindNode(child, searchedPos);
+        return nullptr;
+    }
+
+    Node* SearchNodes(BoardPosition &searchedPos) {
+        Node* foundNode;
+        for (Node* node : nodes) foundNode = FindNode(node, searchedPos);
+        return foundNode;
     }
 
     void Generate() {
@@ -155,7 +169,7 @@ public:
         for (Node* node : nodes) GenerateNodes(node);
     }
 
-     void GenerateNodes(Node* currentNode) {
+    void GenerateNodes(Node* currentNode) {
         
         char turn;
         if ((currentNode->line+1) % 2 == 1) turn = 'X';
@@ -212,7 +226,20 @@ int main()
     AI ai;
     ai.Generate();
 
-    board.Play();
-    
+    board.Reset();
+    int turn = 0;
+
+    do {
+        turn ++;
+        board.Display();
+        board.GetInput();
+
+        Node* currentNode = ai.SearchNodes(board.board);
+        ai.DisplayBoard(currentNode);
+
+    } while (!gameWon && turn < 9); 
+
+    board.Display();
+
     return 0;
 }
