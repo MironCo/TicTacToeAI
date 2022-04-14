@@ -141,19 +141,20 @@ public:
         //check horizontal
         for (int y = 0; y < 3; y++) {
             if (board.board[0][y] == 'X' && board.board[1][y] == 'X' && board.board[2][y] == 'O') return true;
-            else if (board.board[2][y] == 'X' && board.board[1][y] == 'X' && board.board[0][y] == 'O') return true;
+            else if (board.board[0][y] == 'O' && board.board[1][y] == 'X' && board.board[2][y] == 'X') return true;
         }
         //check vertical
         for (int x = 0; x < 3; x++) {
             if (board.board[x][0] == 'X' && board.board[x][1] == 'X' && board.board[x][2] == 'O') return true;
-            else if (board.board[x][2] == 'X' && board.board[x][1] == 'X' && board.board[x][0] == 'O') return true;
+            if (board.board[x][2] == 'X' && board.board[x][1] == 'X' && board.board[x][0] == 'O') return true;
         }
-        /*
+        
         //diagonally
-        else if (board.board[0][0] == turn && board.board[1][1] == turn && board.board[2][2] == turn) won = true;
-        else if (board.board[0][2] == turn && board.board[1][1] == turn && board.board[2][0] == turn) won = true;
-        */
-       return false;
+        if (board.board[0][0] == 'X' && board.board[1][1] == 'X' && board.board[2][2] == 'O') return true;
+        else if (board.board[2][0] == 'X' && board.board[1][1] == 'X' && board.board[0][2] == 'O') return true;
+        else if (board.board[2][0] == 'O' && board.board[1][1] == 'X' && board.board[0][2] == 'X') return true;
+        else if (board.board[2][0] == 'O' && board.board[1][1] == 'X' && board.board[0][2] == 'X') return true;
+        return false;
     }
 
     void Evaluate(BoardPosition &board, int line) {
@@ -167,6 +168,7 @@ public:
         } else {
             if (line >= 9) board.value = TIE;
             else if (CheckForBlock(board)) board.value = BLOCK;
+            else board.value = 0;
         }
     }
 
@@ -242,7 +244,7 @@ public:
                 }
             }
         }
-        std::cout << "Found Right Node" << std::endl;
+        //std::cout << "Found Right Node" << std::endl;
         return true;
     }
 
@@ -285,6 +287,7 @@ public:
         //set position to the best play
         board.board = bestMove->data;
         position = bestMove;
+        std::cout << "Current Node " << position << " from line " << (short)position->line <<" with a value of " << (short)position->data.value << std::endl;
     }
 };
 
@@ -307,7 +310,7 @@ int main()
         board.Display();
         board.GetInput();
         gameWon = board.CheckForWin(turn);
-        if (!gameWon || turn >= 9) {
+        if (!gameWon || turn >= 8) {
             turn++;
             ai.Play(board);
             gameWon = board.CheckForWin(turn);
@@ -316,7 +319,7 @@ int main()
 
     board.Display();
 
-    std::cout << "GAME WON" << std::endl;
-
+    std::cout << "GAME OVER" << std::endl;
+    system("Pause");
     return 0;
 }
