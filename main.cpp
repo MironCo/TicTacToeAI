@@ -58,6 +58,28 @@ public:
         
         turn != turn;
     }
+    bool CheckForWin(short turnInt) {
+        bool won = false;
+        char turn;
+        if ((turnInt) % 2 == 1) turn = 'X';
+        else turn = 'O';
+
+        //check horizontal
+        if (board.board[0][0] == turn && board.board[1][0] == turn && board.board[2][0] == turn) won = true;
+        else if (board.board[0][1] == turn && board.board[1][1] == turn && board.board[2][1] == turn) won = true;
+        else if (board.board[0][2] == turn && board.board[1][2] == turn && board.board[2][2] == turn) won = true;
+        
+        //check vertical
+        else if (board.board[0][0] == turn && board.board[0][1] == turn && board.board[0][2] == turn) won = true;
+        else if (board.board[1][0] == turn && board.board[1][1] == turn && board.board[1][2] == turn) won = true;
+        else if (board.board[2][0] == turn && board.board[2][1] == turn && board.board[2][2] == turn) won = true;
+
+        //diagonally
+        else if (board.board[0][0] == turn && board.board[1][1] == turn && board.board[2][2] == turn) won = true;
+        else if (board.board[0][2] == turn && board.board[1][1] == turn && board.board[2][0] == turn) won = true;
+
+        return won;
+    }
     void PlayAgain() {
     
     }
@@ -81,14 +103,14 @@ class AI
 private:
     static const signed char LOSE = -10;
     static const signed char WIN = 10;
+    static const signed char BLOCK = 5;
     static const signed char TIE = 0;
 public:
     int numNodes = 0;
     std::vector<Node*> nodes;
+    Node* position = nullptr;
 public:
-    AI() {
-        
-    }
+    AI() = default;
     void ResetBoard(BoardPosition &board) {
         for (int x = 0; x < 3; x++) {
             for (int y = 0; y < 3; y++) {
@@ -115,6 +137,24 @@ public:
 
         return won;
     }
+    bool CheckForBlock(BoardPosition &board) {
+        //check horizontal
+        for (int y = 0; y < 3; y++) {
+            if (board.board[0][y] == 'X' && board.board[1][y] == 'X' && board.board[2][y] == 'O') return true;
+            else if (board.board[2][y] == 'X' && board.board[1][y] == 'X' && board.board[0][y] == 'O') return true;
+        }
+        //check vertical
+        for (int x = 0; x < 3; x++) {
+            if (board.board[x][0] == 'X' && board.board[x][1] == 'X' && board.board[x][2] == 'O') return true;
+            else if (board.board[x][2] == 'X' && board.board[x][1] == 'X' && board.board[x][0] == 'O') return true;
+        }
+        /*
+        //diagonally
+        else if (board.board[0][0] == turn && board.board[1][1] == turn && board.board[2][2] == turn) won = true;
+        else if (board.board[0][2] == turn && board.board[1][1] == turn && board.board[2][0] == turn) won = true;
+        */
+       return false;
+    }
 
     void Evaluate(BoardPosition &board, int line) {
         char turn;
@@ -126,43 +166,8 @@ public:
             else if (turn == 'X') board.value = LOSE;
         } else {
             if (line >= 9) board.value = TIE;
-            
+            else if (CheckForBlock(board)) board.value = BLOCK;
         }
-    }
-
-    bool CompareBoard(BoardPosition &pos1, BoardPosition &pos2) {
-        for (int x = 0; x < 3; x++) {
-            for (int y = 0; y < 3; y++) {
-                if (pos1.board[x][y] == pos2.board[x][y]) {
-                    continue;
-                }
-                else {
-                    //std::cout << "Wrong Node" << std::endl;
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    Node* FindNode(Node* node, BoardPosition &searchedPos) {
-        if (CompareBoard(node->data, searchedPos)) return node; 
-        else for (Node* child : node->children) FindNode(child, searchedPos);
-    }
-
-    Node* SearchNodes(BoardPosition &searchedPos) {
-        Node* foundNode;
-        for (Node* node : nodes) {
-            foundNode = FindNode(node, searchedPos);
-            if (foundNode != nullptr) return foundNode;
-        }
-        return nullptr;
-    }
-
-    Node* FindBestMove(Node* currentNode) {
-        int bestValue = -1;
-        for (Node* node : currentNode->children) if (node->data.value > bestValue) return node;
-        else return currentNode->children[0];
     }
 
     void Generate() {
@@ -210,12 +215,12 @@ public:
     }
 
     void DisplayTree(Node* currentNode) {
-        if (currentNode->line == 5 && (currentNode->data.value == WIN || currentNode->data.value == LOSE)) DisplayBoard(currentNode);  
+        if (currentNode->line == 9) DisplayBoard(currentNode);  
         for (Node* node : currentNode->children) DisplayTree(node);
     }
 
     static inline void DisplayBoard(Node* board) {
-        std::cout << "\nLine: " << (short)board->line << std::endl;
+        std::cout << "\nLine: " << (short)board->line << " Node " << board << std::endl;
         if(board->data.value == AI::WIN) std::cout << "Won Position" << std::endl;
         else if(board->data.value == AI::LOSE) std::cout << "LOSE Position" << std::endl;
         std::cout << "-----------\n";   
@@ -227,6 +232,59 @@ public:
             }
             std::cout << "\n-----------\n";
         }
+    }
+
+    bool CompareBoard(BoardPosition &pos1, BoardPosition &pos2) {
+        for (int x = 0; x < 3; x++) {
+            for (int y = 0; y < 3; y++) {
+                if (pos1.board[x][y] != pos2.board[x][y]) {
+                    return false;
+                }
+            }
+        }
+        std::cout << "Found Right Node" << std::endl;
+        return true;
+    }
+
+    Node* FindNode(Node* node, BoardPosition &searchedPos) {
+        if (CompareBoard(node->data, searchedPos)) return node; 
+        else for (Node* child : node->children) FindNode(child, searchedPos);
+    }
+
+    Node* SearchNodes(BoardPosition &searchedPos) {
+        for (Node* node : nodes) {
+            if (CompareBoard(node->data, searchedPos)) return node;
+        }
+        return nullptr;
+    }
+
+    Node* FindNodeInChildren(Node* node, BoardPosition &searchedPos) {
+        for (Node* child : node->children) {
+            if (CompareBoard(child->data, searchedPos)) return child;
+        }
+        return nullptr;
+    }
+
+    Node* FindBestMove(Node* currentNode) {
+        Node* bestNode;
+        int bestValue = -1;
+        for (Node* node : currentNode->children) {
+            if (node->data.value > bestValue) {
+                bestNode =  node;
+                bestValue = bestNode->data.value;
+            }
+        }
+        return bestNode;
+    }
+
+    void Play(Board &board) {
+        std::cout << "AI Move: " << std::endl;
+        if (position == nullptr) position = SearchNodes(board.board);
+        else position = FindNodeInChildren(position, board.board);
+        Node* bestMove = FindBestMove(position);
+        //set position to the best play
+        board.board = bestMove->data;
+        position = bestMove;
     }
 };
 
@@ -242,17 +300,23 @@ int main()
     board.Reset();
     int turn = 0;
 
+    //ai.DisplayTree(ai.nodes[8]);
+
     do {
         turn ++;
         board.Display();
         board.GetInput();
-
-        Node* currentNode = ai.SearchNodes(board.board);
-        
-
+        gameWon = board.CheckForWin(turn);
+        if (!gameWon || turn >= 9) {
+            turn++;
+            ai.Play(board);
+            gameWon = board.CheckForWin(turn);
+        } else std::cout << "\nGAME WON!\n";
     } while (!gameWon && turn < 9); 
 
     board.Display();
+
+    std::cout << "GAME WON" << std::endl;
 
     return 0;
 }
