@@ -45,16 +45,14 @@ public:
         board.board[(index-1)/3][(index-1)%3] = turn;
     }
     void GetInput() {
-        if (turn == 0) {
-            int input;
+        int input;
             
-            do {
-                std::cout << "Player One - Chooses a box from 1 - 9: ";
-                std::cin >> input;
-            } while(!ValidateMove(input));
+        do {
+            std::cout << "Player One - Chooses a box from 1 - 9: ";
+            std::cin >> input;
+        } while(!ValidateMove(input));
 
-            SetBox(input, 'X');
-        }
+        SetBox(input, 'X');
         
         turn != turn;
     }
@@ -309,6 +307,7 @@ int main()
         turn ++;
         board.Display();
         board.GetInput();
+        
         gameWon = board.CheckForWin(turn);
         if (!gameWon || turn >= 8) {
             turn++;
