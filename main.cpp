@@ -101,14 +101,15 @@ class AI
 private:
     static const signed char LOSE = -100;
     static const signed char WIN = 100;
-    static const signed char BLOCK = 3;
+    static const signed char BLOCK = 5;
     static const signed char TIE = 0;
 public:
+    char aiTurn;
     int numNodes = 0;
     std::vector<Node*> nodes;
     Node* position = nullptr;
 public:
-    AI() = default;
+    AI(char turn) { aiTurn = turn; }
     void ResetBoard(BoardPosition &board) {
         for (int x = 0; x < 3; x++) {
             for (int y = 0; y < 3; y++) {
@@ -139,14 +140,18 @@ public:
         //check horizontal
         for (int y = 0; y < 3; y++) {
             if (board.board[0][y] == 'X' && board.board[1][y] == 'X' && board.board[2][y] == 'O') board.value += BLOCK;
-            if (board.board[0][y] == 'O' && board.board[1][y] == 'X' && board.board[2][y] == 'X') board.value += BLOCK;
-            if (board.board[0][y] == 'X' && board.board[1][y] == 'O' && board.board[2][y] == 'X') board.value += BLOCK;
+            else if (board.board[0][y] == 'O' && board.board[1][y] == 'X' && board.board[2][y] == 'X') board.value += BLOCK;
+            else if (board.board[0][y] == 'X' && board.board[1][y] == 'O' && board.board[2][y] == 'X') board.value += BLOCK;
         }
+        
+        //check weird 8 6 9 loophole
+        if (board.board[1][2] == 'X' && board.board[2][1] == 'X' && board.board[0][2] == 'O') board.value += BLOCK;
+
         //check vertical
         for (int x = 0; x < 3; x++) {
             if (board.board[x][0] == 'X' && board.board[x][1] == 'X' && board.board[x][2] == 'O') board.value += BLOCK;
-            if (board.board[x][0] == 'O' && board.board[x][1] == 'X' && board.board[x][2] == 'X') board.value += BLOCK;
-            if (board.board[x][0] == 'X' && board.board[x][1] == 'O' && board.board[x][2] == 'X') board.value += BLOCK;
+            else if (board.board[x][0] == 'O' && board.board[x][1] == 'X' && board.board[x][2] == 'X') board.value += BLOCK;
+            else if (board.board[x][0] == 'X' && board.board[x][1] == 'O' && board.board[x][2] == 'X') board.value += BLOCK;
         }
         
         //diagonally down
@@ -173,25 +178,14 @@ public:
         } else {    
             //check for tie
             if (line >= 9) board.value = TIE;
-            
-            //check for any other losing condition in children
-            for (Node* child : checkedNode->children) {
-                if (CheckForWin(child->data, 'X')) {
-                    board.value = -5;
-                } else if (CheckForWin(child->data, 'O')) {
-                    board.value = 7;
-                }
-                checkedNode->data = board;
-                return;
-            }
 
             //check for blocking
             CheckForBlock(board);
             //check for middle piece at the beginning
-            if (board.board[1][1] == 'O') board.value += 2;
+            if (board.board[1][1] == 'O') board.value += 3;
             //other wise
-            if (board.board[0][0] == 'O' || board.board[2][0] == 'O' || board.board[0][2] == 'O' || board.board[2][2] == 'O') board.value += 1;
-            
+            if (board.board[0][0] == 'O' || board.board[2][0] == 'O' || board.board[0][2] == 'O' || board.board[2][2] == 'O') board.value += 2;
+            if (board.board[1][0] == 'O' || board.board[0][1] == 'O' || board.board[2][1] == 'O' || board.board[1][2] == 'O') board.value -= 1;
         }
         checkedNode->data = board;
     }
@@ -323,7 +317,7 @@ int main()
     bool gameWon = false;
     Board board;
 
-    AI ai;
+    AI ai('O');
     ai.Generate();
 
     char inputEnd;
