@@ -30,7 +30,7 @@ public:
     void Reset() {
         for (int x = 0; x < 3; x++) {
             for (int y = 0; y < 3; y++) {
-                board.board[x][y] = (char)((x*3) + y + '1');
+                board.board[x][y] = ((x*3) + y + '1');
             }
         }
     }
@@ -99,9 +99,9 @@ struct Node
 class AI
 {
 private:
-    static const signed char LOSE = -10;
-    static const signed char WIN = 10;
-    static const signed char BLOCK = 5;
+    static const signed char LOSE = -100;
+    static const signed char WIN = 100;
+    static const signed char BLOCK = 3;
     static const signed char TIE = 0;
 public:
     int numNodes = 0;
@@ -135,39 +135,65 @@ public:
 
         return won;
     }
-    bool CheckForBlock(BoardPosition &board) {
+    void CheckForBlock(BoardPosition &board) {
         //check horizontal
         for (int y = 0; y < 3; y++) {
-            if (board.board[0][y] == 'X' && board.board[1][y] == 'X' && board.board[2][y] == 'O') return true;
-            else if (board.board[0][y] == 'O' && board.board[1][y] == 'X' && board.board[2][y] == 'X') return true;
+            if (board.board[0][y] == 'X' && board.board[1][y] == 'X' && board.board[2][y] == 'O') board.value += BLOCK;
+            if (board.board[0][y] == 'O' && board.board[1][y] == 'X' && board.board[2][y] == 'X') board.value += BLOCK;
+            if (board.board[0][y] == 'X' && board.board[1][y] == 'O' && board.board[2][y] == 'X') board.value += BLOCK;
         }
         //check vertical
         for (int x = 0; x < 3; x++) {
-            if (board.board[x][0] == 'X' && board.board[x][1] == 'X' && board.board[x][2] == 'O') return true;
-            if (board.board[x][2] == 'X' && board.board[x][1] == 'X' && board.board[x][0] == 'O') return true;
+            if (board.board[x][0] == 'X' && board.board[x][1] == 'X' && board.board[x][2] == 'O') board.value += BLOCK;
+            if (board.board[x][0] == 'O' && board.board[x][1] == 'X' && board.board[x][2] == 'X') board.value += BLOCK;
+            if (board.board[x][0] == 'X' && board.board[x][1] == 'O' && board.board[x][2] == 'X') board.value += BLOCK;
         }
         
-        //diagonally
-        if (board.board[0][0] == 'X' && board.board[1][1] == 'X' && board.board[2][2] == 'O') return true;
-        else if (board.board[2][0] == 'X' && board.board[1][1] == 'X' && board.board[0][2] == 'O') return true;
-        else if (board.board[2][0] == 'O' && board.board[1][1] == 'X' && board.board[0][2] == 'X') return true;
-        else if (board.board[2][0] == 'O' && board.board[1][1] == 'X' && board.board[0][2] == 'X') return true;
-        return false;
+        //diagonally down
+        if (board.board[0][0] == 'X' && board.board[1][1] == 'X' && board.board[2][2] == 'O') board.value += BLOCK;
+        if (board.board[0][0] == 'O' && board.board[1][1] == 'X' && board.board[2][2] == 'X') board.value += BLOCK;
+        if (board.board[0][0] == 'X' && board.board[1][1] == 'O' && board.board[2][2] == 'X') board.value += BLOCK;
+
+        //diagonally up
+        if (board.board[2][0] == 'X' && board.board[1][1] == 'X' && board.board[0][2] == 'O') board.value += BLOCK;
+        if (board.board[2][0] == 'O' && board.board[1][1] == 'X' && board.board[0][2] == 'X') board.value += BLOCK;
+        if (board.board[2][0] == 'X' && board.board[1][1] == 'O' && board.board[0][2] == 'X') board.value += BLOCK;
     }
 
-    void Evaluate(BoardPosition &board, int line) {
+    void Evaluate(Node* &checkedNode, int line) {
+        BoardPosition board = checkedNode->data;
         char turn;
         if (line % 2 == 1) turn = 'X';
         else turn ='O';
+        board.value = -1;
 
         if (CheckForWin(board, turn)){
             if (turn == 'O') board.value = WIN;
             else if (turn == 'X') board.value = LOSE;
-        } else {
+        } else {    
+            //check for tie
             if (line >= 9) board.value = TIE;
-            else if (CheckForBlock(board)) board.value = BLOCK;
-            else board.value = 0;
+            
+            //check for any other losing condition in children
+            for (Node* child : checkedNode->children) {
+                if (CheckForWin(child->data, 'X')) {
+                    board.value = -5;
+                } else if (CheckForWin(child->data, 'O')) {
+                    board.value = 7;
+                }
+                checkedNode->data = board;
+                return;
+            }
+
+            //check for blocking
+            CheckForBlock(board);
+            //check for middle piece at the beginning
+            if (board.board[1][1] == 'O') board.value += 2;
+            //other wise
+            if (board.board[0][0] == 'O' || board.board[2][0] == 'O' || board.board[0][2] == 'O' || board.board[2][2] == 'O') board.value += 1;
+            
         }
+        checkedNode->data = board;
     }
 
     void Generate() {
@@ -178,8 +204,8 @@ public:
                 newPos.board[x][y] = 'X';
 
                 unsigned char line = 1;
-                Evaluate(newPos, line);
                 Node* node = new Node(line, newPos);
+                Evaluate(node, line);
                 nodes.push_back(node);
                 numNodes ++;
             }
@@ -199,7 +225,7 @@ public:
                 
                 if (newNode->data.board[x][y] != 'X' && newNode->data.board[x][y] != 'O') {
                     newNode->data.board[x][y] = turn;
-                    Evaluate(newNode->data, currentNode->line+1);
+                    Evaluate(newNode, currentNode->line+1);
                     currentNode->children.push_back(newNode);
                     numNodes ++;
                 } else delete(newNode);
@@ -266,14 +292,17 @@ public:
     }
 
     Node* FindBestMove(Node* currentNode) {
-        Node* bestNode;
+        Node* bestNode = currentNode->children[0];
         int bestValue = -1;
+        int debug = 0;
         for (Node* node : currentNode->children) {
+                   debug ++;
             if (node->data.value > bestValue) {
                 bestNode =  node;
                 bestValue = bestNode->data.value;
             }
         }
+        std::cout << "Found Best Move After " << debug << " compares" << std::endl;
         return bestNode;
     }
 
@@ -292,33 +321,42 @@ public:
 int main()
 {
     bool gameWon = false;
-
     Board board;
 
     AI ai;
     ai.Generate();
 
-    board.Reset();
-    int turn = 0;
+    char inputEnd;
 
     //ai.DisplayTree(ai.nodes[8]);
 
     do {
-        turn ++;
-        board.Display();
-        board.GetInput();
-        
-        gameWon = board.CheckForWin(turn);
-        if (!gameWon || turn >= 8) {
-            turn++;
-            ai.Play(board);
+        system("cls");
+        board.Reset();
+        ai.position = nullptr;
+        int turn = 0;
+        do {
+            turn ++;
+            board.Display();
+            board.GetInput();
+            system("cls");
+            
             gameWon = board.CheckForWin(turn);
-        } else std::cout << "\nGAME WON!\n";
-    } while (!gameWon && turn < 9); 
+            if (!gameWon && turn < 8) {
+                turn++;
+                ai.Play(board);
+                gameWon = board.CheckForWin(turn);
+            } 
+            else if (gameWon) std::cout << "\nGAME WON!\n";
+            else if (turn > 8 && !gameWon) std::cout << "\nGAME TIED\n";
+        } while (!gameWon && turn < 9);
 
-    board.Display();
-
-    std::cout << "GAME OVER" << std::endl;
+        board.Display();
+        std::cout << "Do You Want To (P)lay Again or (Q)uit: ";
+        std::cin >> inputEnd; 
+        
+    } while (tolower(inputEnd) == 'p');
+    
     system("Pause");
     return 0;
 }
