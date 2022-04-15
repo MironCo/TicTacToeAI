@@ -184,8 +184,17 @@ public:
             //check for middle piece at the beginning
             if (board.board[1][1] == 'O') board.value += 3;
             //other wise
+            //if its in the corner its good
             if (board.board[0][0] == 'O' || board.board[2][0] == 'O' || board.board[0][2] == 'O' || board.board[2][2] == 'O') board.value += 2;
-            if (board.board[1][0] == 'O' || board.board[0][1] == 'O' || board.board[2][1] == 'O' || board.board[1][2] == 'O') board.value -= 1;
+
+            //check if x in corner
+            if (line == 2 || line == 4) {
+                if (board.board[0][0] == 'X' || board.board[2][0] == 'X' || board.board[0][2] == 'X' || board.board[2][2] == 'X') {
+                    if (board.board[1][0] == 'O' || board.board[0][1] == 'O' || board.board[2][1] == 'O' || board.board[1][2] == 'O') board.value += 3;
+                }
+            } else {
+                if (board.board[1][0] == 'O' || board.board[0][1] == 'O' || board.board[2][1] == 'O' || board.board[1][2] == 'O') board.value -= 1;
+            }
         }
         checkedNode->data = board;
     }
@@ -288,15 +297,17 @@ public:
     Node* FindBestMove(Node* currentNode) {
         Node* bestNode = currentNode->children[0];
         int bestValue = -1;
+        int debugChanges = 0;
         int debug = 0;
         for (Node* node : currentNode->children) {
                    debug ++;
             if (node->data.value > bestValue) {
                 bestNode =  node;
                 bestValue = bestNode->data.value;
+                debugChanges ++;
             }
         }
-        std::cout << "Found Best Move After " << debug << " compares" << std::endl;
+        std::cout << "Found Best Move After " << debug << " compares" << " and " << debugChanges << " changes." << std::endl;
         return bestNode;
     }
 
