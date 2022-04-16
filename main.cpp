@@ -101,7 +101,7 @@ class AI
 private:
     static const signed char LOSE = -100;
     static const signed char WIN = 100;
-    static const signed char BLOCK = 5;
+    static const signed char BLOCK = 7;
     static const signed char TIE = 0;
 public:
     char aiTurn;
@@ -140,8 +140,8 @@ public:
         //check horizontal
         for (int y = 0; y < 3; y++) {
             if (board.board[0][y] == 'X' && board.board[1][y] == 'X' && board.board[2][y] == 'O') board.value += BLOCK;
-            else if (board.board[0][y] == 'O' && board.board[1][y] == 'X' && board.board[2][y] == 'X') board.value += BLOCK;
-            else if (board.board[0][y] == 'X' && board.board[1][y] == 'O' && board.board[2][y] == 'X') board.value += BLOCK;
+            if (board.board[0][y] == 'O' && board.board[1][y] == 'X' && board.board[2][y] == 'X') board.value += BLOCK;
+            if (board.board[0][y] == 'X' && board.board[1][y] == 'O' && board.board[2][y] == 'X') board.value += BLOCK;
         }
         
         //check weird 8 6 9 loophole
@@ -150,8 +150,8 @@ public:
         //check vertical
         for (int x = 0; x < 3; x++) {
             if (board.board[x][0] == 'X' && board.board[x][1] == 'X' && board.board[x][2] == 'O') board.value += BLOCK;
-            else if (board.board[x][0] == 'O' && board.board[x][1] == 'X' && board.board[x][2] == 'X') board.value += BLOCK;
-            else if (board.board[x][0] == 'X' && board.board[x][1] == 'O' && board.board[x][2] == 'X') board.value += BLOCK;
+            if (board.board[x][0] == 'O' && board.board[x][1] == 'X' && board.board[x][2] == 'X') board.value += BLOCK;
+            if (board.board[x][0] == 'X' && board.board[x][1] == 'O' && board.board[x][2] == 'X') board.value += BLOCK;
         }
         
         //diagonally down
@@ -179,21 +179,33 @@ public:
             //check for tie
             if (line >= 9) board.value = TIE;
 
+            //check if any posiution in children is losing
+            for (Node* child : checkedNode->children) {
+                char cTurn;
+                if ((line + 1)% 2 == 1) cTurn = 'X';
+                else cTurn ='O';
+
+                if (CheckForWin(child->data, cTurn)) {
+                    if (cTurn == 'O') board.value += 10;
+                    else if (cTurn == 'X') board.value -= 10;
+                } 
+            };
+
             //check for blocking
             CheckForBlock(board);
             //check for middle piece at the beginning
-            if (board.board[1][1] == 'O') board.value += 3;
+            if (board.board[1][1] == 'O') board.value += 5;
             //other wise
             //if its in the corner its good
             if (board.board[0][0] == 'O' || board.board[2][0] == 'O' || board.board[0][2] == 'O' || board.board[2][2] == 'O') board.value += 2;
 
             //check if x in corner
             if (line == 2 || line == 4) {
-                if (board.board[0][0] == 'X' || board.board[2][0] == 'X' || board.board[0][2] == 'X' || board.board[2][2] == 'X') {
+                if (board.board[0][0] == 'X' || board.board[2][0] == 'X' || board.board[0][2] == 'X') {
                     if (board.board[1][0] == 'O' || board.board[0][1] == 'O' || board.board[2][1] == 'O' || board.board[1][2] == 'O') board.value += 3;
                 }
             } else {
-                if (board.board[1][0] == 'O' || board.board[0][1] == 'O' || board.board[2][1] == 'O' || board.board[1][2] == 'O') board.value -= 1;
+                if (board.board[1][0] == 'O' || board.board[0][1] == 'O' || board.board[2][1] == 'O' || board.board[1][2] == 'O') board.value -= 2;
             }
         }
         checkedNode->data = board;
@@ -214,6 +226,7 @@ public:
             }
         }
         for (Node* node : nodes) GenerateNodes(node);
+        for (Node* node : nodes) EvaluateNodes(node);
     }
 
     void GenerateNodes(Node* currentNode) {
@@ -228,18 +241,24 @@ public:
                 
                 if (newNode->data.board[x][y] != 'X' && newNode->data.board[x][y] != 'O') {
                     newNode->data.board[x][y] = turn;
-                    Evaluate(newNode, currentNode->line+1);
+                    
                     currentNode->children.push_back(newNode);
                     numNodes ++;
                 } else delete(newNode);
             }
         }
-        
         if (currentNode->line+1 < 9) {
             for (Node* node : currentNode->children) {
                 if (node->data.value == LOSE || node->data.value == WIN) return;
                 else GenerateNodes(node);
             }
+        }
+    }
+
+    void EvaluateNodes(Node* currentNode) {
+        Evaluate(currentNode, currentNode->line);
+        for (Node* child : currentNode->children) {
+            EvaluateNodes(child);
         }
     }
 
